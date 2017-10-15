@@ -99,8 +99,8 @@ class RootContents(tk.Frame):
         self.vely_entry.delete(0, tk.END)
 
     def draw_planet(self, mass, pos, vel):
-        x1, y1 = (pos[0] - R), (pos[1] - R)
-        x2, y2 = (pos[0] + R), (pos[1] + R)
+        x1, y1 = (pos[0] - R + self.canvas_width / 2), (pos[1] - R + self.canvas_height / 2)
+        x2, y2 = (pos[0] + R + self.canvas_width / 2), (pos[1] + R + self.canvas_height / 2)
         tag = self.canvas.create_oval(x1, y1, x2, y2, fill="#0000ff")
         new_planet = PlanetObject(mass, pos, vel, tag)
         self.planet_list.append(new_planet)
@@ -171,21 +171,21 @@ class RootContents(tk.Frame):
         planet.pos = vector.add(planet.pos, planet.vel)
         #planet.posx = planet.posx + planet.velx
         #planet.posy = planet.posy - planet.vely
-        # k1 = self.f(self.pos)
-        # print("k1 = ", k1)
-        return(planet.pos[0], planet.pos[1])
+        k1 = self.f(self.pos)
+        print("k1 = ", k1)
+        return (planet.pos[0], planet.pos[1])
 
-    # def next_pos(self):
-    #     return (vector.add(vector.add(self.pos, self.vel*TIME), self.acceleration*pow(TIME,2)))
+    def next_pos(self):
+        return (vector.add(vector.add(self.pos, self.vel*TIME), self.acceleration*pow(TIME,2)))
 
-    # def acceleration():
-    #     f(self.pos)
+    def acceleration():
+        f(self.pos)
 
-    # def f(self, r):
-    #     total = [0,0]
-    #     for planet in self.planet_list:
-    #         total = vector.add(total, (vector.scalarMult(planet.mass/pow(vector.mag(vector.sub(r - planet.pos)),3), vector.sub(r, planet.pos))
-    #     return(vector.scalarMult(G, total))
+    def f(self, r):
+        total = [0,0]
+        for planet in self.planet_list:
+            total = vector.add(total, (vector.scalarMult(planet.mass/pow(vector.mag(vector.sub(r - planet.pos)),3), vector.sub(r, planet.pos))
+        return (vector.scalarMult(G, total))
 
 if __name__ == "__main__":
     root = tk.Tk()
