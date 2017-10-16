@@ -16,15 +16,21 @@ INSTRUCTION_TEXT = """Instructions:
 Have fun! :)"""
 
 R = 3 #radius of drawn planets
-G = 6.67408 * pow(10,-11) #gravitational constant, m^3 kg^-1 s^-2
-TIME = 1 #time interval for calculating next position, seconds
+G = 6.67408 * pow(10,-9) #should be 6.67*10^-11 but -9 compensates for the input of m*10^9 and kg*10^20 #gravitational constant, m^3 kg^-1 s^-2 
+TIME = 604800 #time interval for calculating next position, 604800 seconds = 1 week
 
 class PlanetObject(object):
     def __init__(self, mass, pos, vel, tag):
         self.mass = mass
         self.pos = pos
+        self.nextpos = pos
         self.vel = vel
+        self.nextvel = vel
         self.tag = tag
+        self.k1 = 0
+        self.k2 = 0
+        self.k3 = 0
+        self.k4 = 0
 
 class RootContents(tk.Frame):
     def __init__(self, parent):
@@ -61,32 +67,32 @@ class RootContents(tk.Frame):
         self.canvas.create_line(self.canvas_width / 2, 0, self.canvas_width / 2, self.canvas_height, fill="#000000")
 
         # Input form layout
-        self.mass_label = tk.Label(parent, text="mass: ")
+        self.mass_label = tk.Label(parent, text="mass [kg*10^20]: ")
         self.mass_label.grid(row=2, column=0)
         self.mass_entry = tk.Entry(parent)
         self.mass_entry.grid(row=2, column=1)
-        self.posx_label = tk.Label(parent, text="x position: ")
+        self.posx_label = tk.Label(parent, text="x position [km*10^6]: ")
         self.posx_label.grid(row=3, column=0)
         self.posx_entry = tk.Entry(parent)
         self.posx_entry.grid(row=3, column=1)
-        self.posy_label = tk.Label(parent, text="y position: ")
+        self.posy_label = tk.Label(parent, text="y position [km*10^6]: ")
         self.posy_label.grid(row=4, column=0)
         self.posy_entry = tk.Entry(parent)
         self.posy_entry.grid(row=4, column=1)
-        self.velx_label = tk.Label(parent, text="x velocity: ")
+        self.velx_label = tk.Label(parent, text="x velocity [m/s]: ")
         self.velx_label.grid(row=5, column=0)
         self.velx_entry = tk.Entry(parent)
         self.velx_entry.grid(row=5, column=1)
-        self.vely_label = tk.Label(parent, text="y velocity: ")
+        self.vely_label = tk.Label(parent, text="y velocity [m/s]: ")
         self.vely_label.grid(row=6, column=0)
         self.vely_entry = tk.Entry(parent)
         self.vely_entry.grid(row=6, column=1)
 
     def create_planet(self):
         # Save the entry form data
-        pos = [int(self.posx_entry.get()), int(self.posy_entry.get())]
-        mass = int(self.mass_entry.get())
-        vel = [int(self.velx_entry.get()), int(self.vely_entry.get())]
+        pos = [float(self.posx_entry.get()), float(self.posy_entry.get())] #in units of m*10^9
+        mass = float(self.mass_entry.get())#in units of kg*10^20
+        vel = [float(self.velx_entry.get()), float(self.vely_entry.get())] #in units of m/s
 
         # Draw and save the point
         self.draw_planet(mass, pos, vel)
@@ -101,7 +107,7 @@ class RootContents(tk.Frame):
     def draw_planet(self, mass, pos, vel):
         x1, y1 = (pos[0] - R + self.canvas_width / 2), (pos[1] - R + self.canvas_height / 2)
         x2, y2 = (pos[0] + R + self.canvas_width / 2), (pos[1] + R + self.canvas_height / 2)
-        tag = self.canvas.create_oval(x1, y1, x2, y2, fill="#0000ff")
+        tag = self.canvas.create_oval(int(x1), int(y1), int(x2), int(y2), fill="#0000ff")
         new_planet = PlanetObject(mass, pos, vel, tag)
         self.planet_list.append(new_planet)
 
@@ -120,6 +126,8 @@ class RootContents(tk.Frame):
 
     def clear_canvas(self):
         self.canvas.delete(tk.ALL)
+        self.canvas.create_line(0, self.canvas_height / 2, self.canvas_width, self.canvas_height / 2, fill="#000000")
+        self.canvas.create_line(self.canvas_width / 2, 0, self.canvas_width / 2, self.canvas_height, fill="#000000")
 
     def reset_canvas(self):
         if (self.old_planet_list is None):
@@ -140,8 +148,9 @@ class RootContents(tk.Frame):
         self.motion_thread.start()
 
     def stop_running(self):
-        self.exit_flag = True
-        self.run_button["text"] = "Run"
+        if(self.motion_thread is not None):
+            self.stop_running()
+            self.motion_thread.join()
         self.run_button["command"] = self.run
 
     def motion(self):
@@ -151,15 +160,15 @@ class RootContents(tk.Frame):
         exit_flag = False
 
     def exit(self):
-        if(self.motion_thread is not None):
-            self.stop_running()
-            self.motion_thread.join()
+        self.stop_running()
+        self.motion_thread.join()
         self.root.destroy()
 
     def move_planets(self):
+        self.next_pos()
         for planet in self.planet_list:
-            (new_posx, new_posy) = self.do_the_math(planet)
-            self.canvas.coords(planet.tag, new_posx - R, new_posy - R, new_posx + R, new_posy + R)
+            #(new_posx, new_posy) = self.do_the_math(planet)
+            self.canvas.coords(planet.tag, int(planet.pos[0]) - R, int(planet.pos[1]) - R, int(planet.pos[0]) + R, int(planet.pos[1]) + R)
         time.sleep(1)
 
     # THIS IS WHERE THE MATH WILL GO!
@@ -167,25 +176,66 @@ class RootContents(tk.Frame):
     # planet.posx is the x coordinate at the end of the time interval,
     # planet.posy is the y coordinate at the end of the time interval.
     # The method should also update the planet's velocity
-    def do_the_math(self, planet):
-        planet.pos = vector.add(planet.pos, planet.vel)
-        #planet.posx = planet.posx + planet.velx
-        #planet.posy = planet.posy - planet.vely
-        k1 = self.f(self.pos)
-        print("k1 = ", k1)
-        return (planet.pos[0], planet.pos[1])
+    #def do_the_math(self, planet):
+        #self.next_pos()
+        #new_pos = vector.add(planet.pos, planet.vel)
 
+    #runge kutta: pos(i+1) = pos(i) + vel(i)*TIME + 1/6 * (k1+2k2+2k3+k4)*TIME^2
+    #k1 = f(y)
+    #k2 = f(y + 1/2k1h)
+    #k3 = f(y + 1/2k2h)
+    #k4 = f(y+k3h)
+
+    #Finds the next position of each planet using the Runge Kutta Method
+    #NOTE:
+    #   Finding the k value and finding the next velocity/position need to be in different loops
+    #   This prevents the changing of one position from effecting the other k predictions
     def next_pos(self):
-        return (vector.add(vector.add(self.pos, self.vel*TIME), self.acceleration*pow(TIME,2)))
+        #Find k1 for each planet
+        for planet in self.planet_list:
+            planet.k1 = self.slope(planet.nextvel, planet)
 
-    def acceleration():
-        f(self.pos)
+        #Use k1 to find predicted next velocity and position
+        for planet in self.planet_list:
+            planet.nextvel = vector.add(planet.vel, vector.scalarMult(planet.k1, 1/2*TIME))
+            planet.nextpos = vector.add(planet.pos, vector.scalarMult(planet.nextvel, 1/2*TIME))
 
-    def f(self, r):
+        #Find k2 for each planet
+        for planet in self.planet_list:        
+            planet.k2 = self.slope(planet.nextvel, planet)
+
+        #Use k2 to find predicted next velocity and position
+        for planet in self.planet_list:
+            planet.nextvel = vector.add(planet.vel, vector.scalarMult(planet.k2, 1/2*TIME))
+            planet.nextpos = vector.add(planet.pos, vector.scalarMult(planet.nextvel, 1/2*TIME))
+
+        #Find k3 for each planet
+        for planet in self.planet_list:
+            planet.k3 = self.slope(planet.nextvel, planet)
+
+        #Use k3 to find predicted next velocity and position
+        for planet in self.planet_list:
+            planet.nextvel = vector.add(planet.vel, vector.scalarMult(planet.k3, TIME))
+            planet.nextpos = vector.add(planet.pos, vector.scalarMult(planet.nextvel, TIME))
+
+        #Find k4 for each planet
+        for planet in self.planet_list:
+            planet.k4 = self.slope(planet.nextvel, planet)
+
+        #Use k values to find velocity and position
+        for planet in self.planet_list:
+            planet.vel = vector.add(planet.vel, vector.scalarMult(vector.add(vector.add(vector.add(planet.k1, vector.scalarMult(planet.k2, 2)), vector.scalarMult(planet.k3, 2)), planet.k4), TIME/6))
+            planet.pos = vector.add(planet.pos, vector.scalarMult(planet.vel, TIME))
+            planet.nextvel = planet.vel
+            planet.nextpos = planet.pos
+
+    #Uses the predicted next velocity and next position values to find the slope of the function
+    def slope(self, r, ref_planet):
         total = [0,0]
         for planet in self.planet_list:
-            total = vector.add(total, (vector.scalarMult(planet.mass/pow(vector.mag(vector.sub(r - planet.pos)),3), vector.sub(r, planet.pos))
-        return (vector.scalarMult(G, total))
+            if (ref_planet != planet):
+                total = vector.add(total, vector.scalarMult(vector.sub(r, planet.nextpos),(planet.mass/pow(vector.mag(vector.sub(r, planet.nextpos)),3))))
+        return(vector.scalarMult(total, G))
 
 if __name__ == "__main__":
     root = tk.Tk()
