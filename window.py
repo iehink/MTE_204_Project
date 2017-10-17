@@ -179,9 +179,18 @@ class RootContents(tk.Frame):
         self.root.destroy()
 
     def move_planets(self):
-        self.next_pos()
-        for planet in self.planet_list:
-            self.canvas.coords(planet.tag, int(planet.pos[0]*pow(10,-9)) - R, int(planet.pos[1]*pow(10,-9)) - R, int(planet.pos[0]*pow(10,-9)) + R, int(planet.pos[1]*pow(10,-9)) + R)
+        converted_planet_list = self.next_pos()
+        for planet in converted_planet_list:
+            print(planet[0])
+            print(planet[1])
+            # planet[2] is the oval's tag in the canvas
+            # planet[0] is the planet's converted x position
+            # planet[1] is the planet's converted y position
+            self.canvas.coords(planet[2],
+                               planet[0] - R + self.canvas_width / 2,
+                               planet[1] - R + self.canvas_height / 2,
+                               planet[0] + R + self.canvas_width / 2,
+                               planet[1] + R + self.canvas_height / 2)
         time.sleep(1)
 
     #runge kutta: pos(i+1) = pos(i) + vel(i)*TIME + 1/6 * (k1+2k2+2k3+k4)*TIME^2
@@ -239,6 +248,17 @@ class RootContents(tk.Frame):
             #planet.pos = vector.add(planet.pos, vector.scalarMult(planet.vel, TIME))
             planet.nextvel = planet.vel
             planet.nextpos = planet.pos
+
+        converted_planet_list = []
+        for planet in self.planet_list:
+            # convert units here, then return another list
+            temp_data = []
+            temp_data.append(int(planet.pos[0]*pow(10,-9)))
+            temp_data.append(int(planet.pos[1]*pow(10,-9)))
+            temp_data.append(planet.tag)
+            converted_planet_list.append(temp_data)
+            
+        return converted_planet_list
 
     #Uses the predicted next velocity and next position values to find the slope of the function
     def slope(self, r, ref_planet):
