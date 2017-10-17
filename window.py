@@ -146,7 +146,6 @@ class RootContents(tk.Frame):
         if (self.old_planet_list is None):
             return
         self.clear_canvas()
-
         # Reset the planet list to what it was before the simulation was run
         # and redraw the canvas
         self.planet_list = []
@@ -182,7 +181,6 @@ class RootContents(tk.Frame):
     def move_planets(self):
         self.next_pos()
         for planet in self.planet_list:
-            #(new_posx, new_posy) = self.do_the_math(planet)
             self.canvas.coords(planet.tag, int(planet.pos[0]*pow(10,-9)) - R, int(planet.pos[1]*pow(10,-9)) - R, int(planet.pos[0]*pow(10,-9)) + R, int(planet.pos[1]*pow(10,-9)) + R)
         time.sleep(1)
 
