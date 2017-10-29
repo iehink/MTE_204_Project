@@ -83,11 +83,11 @@ class RootContents(tk.Frame):
         self.posy_label.grid(row=4, column=0)
         self.posy_entry = tk.Entry(parent)
         self.posy_entry.grid(row=4, column=1)
-        self.velx_label = tk.Label(parent, text="x velocity [m/s]: ")
+        self.velx_label = tk.Label(parent, text="x velocity [km/s]: ")
         self.velx_label.grid(row=5, column=0)
         self.velx_entry = tk.Entry(parent)
         self.velx_entry.grid(row=5, column=1)
-        self.vely_label = tk.Label(parent, text="y velocity [m/s]: ")
+        self.vely_label = tk.Label(parent, text="y velocity [km/s]: ")
         self.vely_label.grid(row=6, column=0)
         self.vely_entry = tk.Entry(parent)
         self.vely_entry.grid(row=6, column=1)
@@ -100,9 +100,9 @@ class RootContents(tk.Frame):
 
     def create_planet(self):
         # Save the entry form data
-        pos = [float(self.posx_entry.get()), float(self.posy_entry.get())] #in units of m*10^9
+        pos = [float(self.posx_entry.get()), -1 * float(self.posy_entry.get())] #in units of m*10^9
         mass = float(self.mass_entry.get()) #in units of kg*10^20
-        vel = [float(self.velx_entry.get()), float(self.vely_entry.get())] #in units of m/s
+        vel = [1000 * float(self.velx_entry.get()), -1000 * float(self.vely_entry.get())] #in units of m/s
 
         mass = mass*pow(10,20)
         pos = vector.scalarMult(pos, pow(10, 9))
@@ -141,6 +141,7 @@ class RootContents(tk.Frame):
         self.canvas.delete(tk.ALL)
         self.canvas.create_line(0, self.canvas_height / 2, self.canvas_width, self.canvas_height / 2, fill="#000000")
         self.canvas.create_line(self.canvas_width / 2, 0, self.canvas_width / 2, self.canvas_height, fill="#000000")
+        self.planet_list = []
 
     def reset_canvas(self):
         if (self.old_planet_list is None):
