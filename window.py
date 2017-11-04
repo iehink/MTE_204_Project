@@ -17,7 +17,7 @@ Have fun! :)"""
 
 R = 3 #radius of drawn planets
 G = 6.67408 * pow(10,-11) #gravitational constant, m^3 kg^-1 s^-2 
-TIME = 604800 #time interval for calculating next position, 604800 seconds = 1 week
+TIME = 1728 #604800 #time interval for calculating next position, 604800 seconds = 1 week
 
 class PlanetObject(object):
     def __init__(self, mass, pos, vel, tag):
@@ -92,20 +92,16 @@ class RootContents(tk.Frame):
         self.vely_entry = tk.Entry(parent)
         self.vely_entry.grid(row=6, column=1)
 
-        #Test output boxes
-##        self.out1 = tk.Label(parent, text=" ")
-##        self.out1.grid(row=0, column=0)
-##        self.out2 = tk.Label(parent, text=G)
-##        self.out2.grid(row=0, column=1)
-
     def create_planet(self):
         # Save the entry form data
         pos = [float(self.posx_entry.get()), -1 * float(self.posy_entry.get())] #in units of m*10^9
         mass = float(self.mass_entry.get()) #in units of kg*10^20
-        vel = [1000 * float(self.velx_entry.get()), -1000 * float(self.vely_entry.get())] #in units of m/s
+        vel = [float(self.velx_entry.get()), -1 * float(self.vely_entry.get())] #in units of m/s*10^3
 
+        # Modify to match units used in calculations
         mass = mass*pow(10,20)
         pos = vector.scalarMult(pos, pow(10, 9))
+        vel = vector.scalarMult(vel, pow(10, 3))
 
         # Draw and save the point
         self.draw_planet(mass, pos, vel)
@@ -182,8 +178,8 @@ class RootContents(tk.Frame):
     def move_planets(self):
         converted_planet_list = self.next_pos()
         for planet in converted_planet_list:
-            print(planet[0])
-            print(planet[1])
+            #print(planet[0])
+            #print(planet[1])
             # planet[2] is the oval's tag in the canvas
             # planet[0] is the planet's converted x position
             # planet[1] is the planet's converted y position
@@ -192,7 +188,7 @@ class RootContents(tk.Frame):
                                planet[1] - R + self.canvas_height / 2,
                                planet[0] + R + self.canvas_width / 2,
                                planet[1] + R + self.canvas_height / 2)
-        time.sleep(1)
+        time.sleep(.005)
 
     #runge kutta: pos(i+1) = pos(i) + vel(i)*TIME + 1/6 * (k1+2k2+2k3+k4)*TIME^2
     #k1 = f(y)
@@ -207,9 +203,7 @@ class RootContents(tk.Frame):
     def next_pos(self):
         #Find k1 for each planet
         for planet in self.planet_list:
-            planet.k1 = self.slope(planet.nextvel, planet)
-##            self.out1["text"] = planet.pos[0]
-##            self.out2["text"] = planet.pos[1]
+            planet.k1 = self.slope(planet.nextpos, planet)
 
         #Use k1 to find predicted next velocity and position
         for planet in self.planet_list:
@@ -219,7 +213,7 @@ class RootContents(tk.Frame):
 
         #Find k2 for each planet
         for planet in self.planet_list:        
-            planet.k2 = self.slope(planet.nextvel, planet)
+            planet.k2 = self.slope(planet.nextpos, planet)
 
         #Use k2 to find predicted next velocity and position
         for planet in self.planet_list:
@@ -229,7 +223,7 @@ class RootContents(tk.Frame):
 
         #Find k3 for each planet
         for planet in self.planet_list:
-            planet.k3 = self.slope(planet.nextvel, planet)
+            planet.k3 = self.slope(planet.nextpos, planet)
 
         #Use k3 to find predicted next velocity and position
         for planet in self.planet_list:
@@ -239,7 +233,7 @@ class RootContents(tk.Frame):
 
         #Find k4 for each planet
         for planet in self.planet_list:
-            planet.k4 = self.slope(planet.nextvel, planet)
+            planet.k4 = self.slope(planet.nextpos, planet)
             planet.v4 = vector.add(planet.vel, vector.scalarMult(planet.k4, TIME))
 
         #Use k values to find velocity and position
@@ -247,6 +241,9 @@ class RootContents(tk.Frame):
             planet.vel = vector.add(planet.vel, vector.scalarMult(vector.add(vector.add(vector.add(planet.k1, vector.scalarMult(planet.k2, 2)), vector.scalarMult(planet.k3, 2)), planet.k4), TIME/6))
             planet.pos = vector.add(vector.add(planet.pos, vector.scalarMult(planet.vel, TIME)), vector.scalarMult(vector.add(vector.add(vector.add(planet.v1, vector.scalarMult(planet.v2, 2)), vector.scalarMult(planet.v3, 2)), planet.v4), TIME/6))
             #planet.pos = vector.add(planet.pos, vector.scalarMult(planet.vel, TIME))
+            #print("Velocity: " + str(planet.vel))
+            #print("Position: " + str(planet.pos))
+
             planet.nextvel = planet.vel
             planet.nextpos = planet.pos
 
@@ -261,12 +258,13 @@ class RootContents(tk.Frame):
             
         return converted_planet_list
 
-    #Uses the predicted next velocity and next position values to find the slope of the function
-    def slope(self, r, ref_planet):
+    #Uses the predicted next position values to find the acceleration of the planet
+    def slope(self, pos, ref_planet):
         total = [0,0]
         for planet in self.planet_list:
             if (ref_planet != planet):
-                total = vector.add(total, vector.scalarMult(vector.sub(r, planet.nextpos),(planet.mass/pow(vector.mag(vector.sub(r, planet.nextpos)),3))))
+                total = vector.add(total, vector.scalarMult(vector.sub(planet.nextpos, pos),(planet.mass/pow(vector.mag(vector.sub(planet.nextpos, pos)),3))))
+        print("Acceration: " + str(total))
         return(vector.scalarMult(total, G))
 
 if __name__ == "__main__":
