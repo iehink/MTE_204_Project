@@ -17,7 +17,7 @@ Have fun! :)"""
 
 R = 3 #radius of drawn planets
 G = 6.67408 * pow(10,-11) #gravitational constant, m^3 kg^-1 s^-2 
-TIME = 43200 #604800 seconds = 1 week
+TIME = 43200 #43200 seconds = 1/2 day
 
 class PlanetObject(object):
     def __init__(self, mass, pos, vel, tag):
@@ -130,8 +130,11 @@ class RootContents(tk.Frame):
             y = can.canvasy(event.y)
             for planet_index in range(len(self.planet_list)):
                 planet = self.planet_list[planet_index]
-                if (planet.pos[0] <= R + x and planet.pos[0] >= x - R):
-                    if (planet.pos[1] <= R + y and planet.pos[1] >= y-R):
+                print(test)
+                if (int(planet.pos[0]*pow(10, -9)) <= R + x and int(planet.pos[0]*pow(10, -9)) >= x - R):
+                    print(0)
+                    if (int(planet.pos[1]*pow(10, -9)) <= R + y and int(planet.pos[1]*pow(10, -9)) >= y-R):
+                        print
                         # Delete the planet
                         self.canvas.delete(planet.tag)
                         del(self.planet_list[planet_index])
@@ -146,6 +149,7 @@ class RootContents(tk.Frame):
         if (self.old_planet_list is None):
             return
         self.clear_canvas()
+        self.time_Passed = 0
         # Reset the planet list to what it was before the simulation was run
         # and redraw the canvas
         self.planet_list = []
@@ -157,7 +161,7 @@ class RootContents(tk.Frame):
         self.run_button["text"] = "Stop"
         self.run_button["command"] = self.stop_running
         self.motion_thread = threading.Thread(target=self.motion)
-        self.motion_thread.start() 
+        self.motion_thread.start()
 
     def stop_running(self):
         self.pause_flag = True
@@ -168,6 +172,7 @@ class RootContents(tk.Frame):
         self.run_button["command"] = self.resume_running
 
     def resume_running(self):
+        self.old_planet_list = copy.deepcopy(self.planet_list)
         self.pause_flag = False
         self.sem.release()
         self.run_button["text"] = "Stop"
@@ -254,10 +259,7 @@ class RootContents(tk.Frame):
         #Use k values to find velocity and position
         for planet in self.planet_list:
             planet.vel = vector.add(planet.vel, vector.scalarMult(vector.add(vector.add(vector.add(planet.k1, vector.scalarMult(planet.k2, 2)), vector.scalarMult(planet.k3, 2)), planet.k4), TIME/6))
-            #planet.pos = vector.add(vector.add(planet.pos, vector.scalarMult(planet.vel, TIME)), vector.scalarMult(vector.add(vector.add(vector.add(planet.v1, vector.scalarMult(planet.v2, 2)), vector.scalarMult(planet.v3, 2)), planet.v4), TIME/6))
             planet.pos = vector.add(planet.pos, vector.scalarMult(vector.add(vector.add(vector.add(planet.v1, vector.scalarMult(planet.v2, 2)), vector.scalarMult(planet.v3, 2)), planet.v4), TIME/6))
-            
-            #planet.pos = vector.add(planet.pos, vector.scalarMult(planet.vel, TIME))
             print("Velocity: " + str(planet.vel))
             print("Position: " + str(planet.pos))
 
