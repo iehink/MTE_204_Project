@@ -17,7 +17,7 @@ Have fun! :)"""
 
 R = 3 #radius of drawn planets
 G = 6.67408 * pow(10,-11) #gravitational constant, m^3 kg^-1 s^-2 
-TIME = 1728 #604800 #time interval for calculating next position, 604800 seconds = 1 week
+TIME = 43200 #604800 seconds = 1 week
 
 class PlanetObject(object):
     def __init__(self, mass, pos, vel, tag):
@@ -43,6 +43,9 @@ class RootContents(tk.Frame):
         self.old_planet_list = None
         self.root = parent
         self.motion_thread = None
+        self.time_Passed = 0
+        self.pause_flag = 0
+        self.sem = threading.Semaphore(0)
 
         # Text layout
         self.instruction_title = tk.Label(parent, text=INSTRUCTION_TEXT)
@@ -157,16 +160,27 @@ class RootContents(tk.Frame):
         self.motion_thread.start() 
 
     def stop_running(self):
-        if(self.motion_thread is not None):
-            self.exit_flag = True
-            self.motion_thread.join()
+        self.pause_flag = True
+        #if(self.motion_thread is not None):
+            #self.exit_flag = True
+            #self.motion_thread.join()
         self.run_button["text"] = "Run"
-        self.run_button["command"] = self.run
+        self.run_button["command"] = self.resume_running
+
+    def resume_running(self):
+        self.pause_flag = False
+        self.sem.release()
+        self.run_button["text"] = "Stop"
+        self.run_button["command"] = self.stop_running
 
     def motion(self):
         self.exit_flag = False
         while(not self.exit_flag):
+            if(self.pause_flag):
+                self.sem.acquire() #waits untill signal
             self.move_planets()
+            self.time_Passed = self.time_Passed + TIME
+            print("Days: " + str(self.time_Passed/86400)) #outputs the days passed
         exit_flag = False
 
     def exit(self):
@@ -188,7 +202,7 @@ class RootContents(tk.Frame):
                                planet[1] - R + self.canvas_height / 2,
                                planet[0] + R + self.canvas_width / 2,
                                planet[1] + R + self.canvas_height / 2)
-        time.sleep(.005)
+        #time.sleep(.001)
 
     #runge kutta: pos(i+1) = pos(i) + vel(i)*TIME + 1/6 * (k1+2k2+2k3+k4)*TIME^2
     #k1 = f(y)
@@ -204,6 +218,7 @@ class RootContents(tk.Frame):
         #Find k1 for each planet
         for planet in self.planet_list:
             planet.k1 = self.slope(planet.nextpos, planet)
+            #print("k1: " + str(planet.k1))
 
         #Use k1 to find predicted next velocity and position
         for planet in self.planet_list:
@@ -239,10 +254,12 @@ class RootContents(tk.Frame):
         #Use k values to find velocity and position
         for planet in self.planet_list:
             planet.vel = vector.add(planet.vel, vector.scalarMult(vector.add(vector.add(vector.add(planet.k1, vector.scalarMult(planet.k2, 2)), vector.scalarMult(planet.k3, 2)), planet.k4), TIME/6))
-            planet.pos = vector.add(vector.add(planet.pos, vector.scalarMult(planet.vel, TIME)), vector.scalarMult(vector.add(vector.add(vector.add(planet.v1, vector.scalarMult(planet.v2, 2)), vector.scalarMult(planet.v3, 2)), planet.v4), TIME/6))
+            #planet.pos = vector.add(vector.add(planet.pos, vector.scalarMult(planet.vel, TIME)), vector.scalarMult(vector.add(vector.add(vector.add(planet.v1, vector.scalarMult(planet.v2, 2)), vector.scalarMult(planet.v3, 2)), planet.v4), TIME/6))
+            planet.pos = vector.add(planet.pos, vector.scalarMult(vector.add(vector.add(vector.add(planet.v1, vector.scalarMult(planet.v2, 2)), vector.scalarMult(planet.v3, 2)), planet.v4), TIME/6))
+            
             #planet.pos = vector.add(planet.pos, vector.scalarMult(planet.vel, TIME))
-            #print("Velocity: " + str(planet.vel))
-            #print("Position: " + str(planet.pos))
+            print("Velocity: " + str(planet.vel))
+            print("Position: " + str(planet.pos))
 
             planet.nextvel = planet.vel
             planet.nextpos = planet.pos
@@ -264,7 +281,6 @@ class RootContents(tk.Frame):
         for planet in self.planet_list:
             if (ref_planet != planet):
                 total = vector.add(total, vector.scalarMult(vector.sub(planet.nextpos, pos),(planet.mass/pow(vector.mag(vector.sub(planet.nextpos, pos)),3))))
-        print("Acceration: " + str(total))
         return(vector.scalarMult(total, G))
 
 if __name__ == "__main__":
