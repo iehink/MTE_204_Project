@@ -43,9 +43,9 @@ class RootContents(tk.Frame):
         self.old_planet_list = None
         self.root = parent
         self.motion_thread = None
+        self.exit_flag = False
         self.time_Passed = 0
-        self.pause_flag = 0
-        self.sem = threading.Semaphore(0)
+        self.first_run = True
 
         # Text layout
         self.instruction_title = tk.Label(parent, text=INSTRUCTION_TEXT)
@@ -70,8 +70,8 @@ class RootContents(tk.Frame):
         self.canvas.grid(row=0, column=2, rowspan=10, sticky=tk.E)
         self.canvas_height = self.canvas.winfo_reqheight()
         self.canvas_width = self.canvas.winfo_reqwidth()
-        self.canvas.create_line(0, self.canvas_height / 2, self.canvas_width, self.canvas_height / 2, fill="#000000")
-        self.canvas.create_line(self.canvas_width / 2, 0, self.canvas_width / 2, self.canvas_height, fill="#000000")
+        self.horizontal_line = self.canvas.create_line(0, self.canvas_height / 2, self.canvas_width, self.canvas_height / 2, fill="#000000")
+        self.vertical_line = self.canvas.create_line(self.canvas_width / 2, 0, self.canvas_width / 2, self.canvas_height, fill="#000000")
 
         # Input form layout
         self.mass_label = tk.Label(parent, text="mass [kg*10^20]: ")
@@ -126,24 +126,19 @@ class RootContents(tk.Frame):
     def delete_planet(self, event):
         can = event.widget
         if (isinstance(can, tk.Canvas)):
-            x = can.canvasx(event.x)
-            y = can.canvasy(event.y)
-            for planet_index in range(len(self.planet_list)):
-                planet = self.planet_list[planet_index]
-                print(test)
-                if (int(planet.pos[0]*pow(10, -9)) <= R + x and int(planet.pos[0]*pow(10, -9)) >= x - R):
-                    print(0)
-                    if (int(planet.pos[1]*pow(10, -9)) <= R + y and int(planet.pos[1]*pow(10, -9)) >= y-R):
-                        print
-                        # Delete the planet
-                        self.canvas.delete(planet.tag)
+            if (can.type(tk.CURRENT) != "line"):
+                for planet_index in range(len(self.planet_list)):
+                    if (self.planet_list[planet_index].tag == tk.CURRENT):
                         del(self.planet_list[planet_index])
+                self.canvas.delete(tk.CURRENT)
 
     def clear_canvas(self):
         self.canvas.delete(tk.ALL)
         self.canvas.create_line(0, self.canvas_height / 2, self.canvas_width, self.canvas_height / 2, fill="#000000")
         self.canvas.create_line(self.canvas_width / 2, 0, self.canvas_width / 2, self.canvas_height, fill="#000000")
         self.planet_list = []
+        self.time_Passed = 0
+        self.first_run = True
 
     def reset_canvas(self):
         if (self.old_planet_list is None):
@@ -151,47 +146,36 @@ class RootContents(tk.Frame):
         self.clear_canvas()
         self.time_Passed = 0
         # Reset the planet list to what it was before the simulation was run
-        # and redraw the canvas
+        # and redraw the canvas (This adds the planets back into the planet list)
         self.planet_list = []
         for planet in self.old_planet_list:
             self.draw_planet(planet.mass, planet.pos, planet.vel)
 
     def run(self):
-        self.old_planet_list = copy.deepcopy(self.planet_list)
+        if (self.first_run == True):
+            self.old_planet_list = copy.deepcopy(self.planet_list)
+            self.first_run = False
         self.run_button["text"] = "Stop"
         self.run_button["command"] = self.stop_running
         self.motion_thread = threading.Thread(target=self.motion)
         self.motion_thread.start()
 
     def stop_running(self):
-        self.pause_flag = True
-        #if(self.motion_thread is not None):
-            #self.exit_flag = True
-            #self.motion_thread.join()
+        self.exit_flag = True
+        #self.motion_thread.join()
+        self.motion_thread = None
         self.run_button["text"] = "Run"
-        self.run_button["command"] = self.resume_running
-
-    def resume_running(self):
-        self.old_planet_list = copy.deepcopy(self.planet_list)
-        self.pause_flag = False
-        self.sem.release()
-        self.run_button["text"] = "Stop"
-        self.run_button["command"] = self.stop_running
+        self.run_button["command"] = self.run
 
     def motion(self):
         self.exit_flag = False
         while(not self.exit_flag):
-            if(self.pause_flag):
-                self.sem.acquire() #waits untill signal
             self.move_planets()
             self.time_Passed = self.time_Passed + TIME
             print("Days: " + str(self.time_Passed/86400)) #outputs the days passed
-        exit_flag = False
 
     def exit(self):
-        if(self.motion_thread is not None):
-            self.stop_running()
-            self.motion_thread.join()
+        self.stop_running()
         self.root.destroy()
 
     def move_planets(self):
