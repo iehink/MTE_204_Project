@@ -10,7 +10,7 @@ INSTRUCTION_TEXT = """INSTRUCTIONS:
 -Fill in the required fields below
 -Click 'Create' to add the planet to the sandbox
 -Click 'Run' to start the simulation, 'Stop' to pause it
--'Reset' will return the planets to the last time you hit 'Run'
+-'Reset' will return the planets to their initial states
 -Click on a planet to display information about it
 -Right-click to delete a planet
 """
