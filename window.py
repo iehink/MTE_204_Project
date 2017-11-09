@@ -6,21 +6,24 @@ import vector
 
 #CONSTANTS
 INSTRUCTION_MARGIN = 50
-INSTRUCTION_TEXT = """Instructions:
-- Click on the white space to the right to place a planet.
-- A popup will apppear, input the requested information 
-(position, velocity, and mass).
-- Right click on a planet to delete it.
-- Click the clear button to delete everthing.
-- Click run to run the simulation.
-Have fun! :)"""
+INSTRUCTION_TEXT = """INSTRUCTIONS:
+-Fill in the required fields below
+-Click 'Create' to add the planet to the sandbox
+-Click 'Run' to start the simulation, 'Stop' to pause it
+-'Reset' will return the planets to the last time you hit 'Run'
+-Click on a planet to display information about it
+-Right-click to delete a planet
+"""
+DIVIDER = """__________________________________________________________________"""
+
 
 R = 3 #radius of drawn planets
 G = 6.67408 * pow(10,-11) #gravitational constant, m^3 kg^-1 s^-2 
 TIME = 43200 #43200 seconds = 1/2 day
 
 class PlanetObject(object):
-    def __init__(self, mass, pos, vel, tag):
+    def __init__(self, name, mass, pos, vel, tag):
+        self.name = name
         self.mass = mass
         self.pos = pos
         self.nextpos = pos
@@ -48,55 +51,62 @@ class RootContents(tk.Frame):
         self.first_run = True
 
         # Text layout
-        self.instruction_title = tk.Label(parent, text=INSTRUCTION_TEXT)
+        self.instruction_title = tk.Label(parent, text=(INSTRUCTION_TEXT+DIVIDER), justify=tk.LEFT)
         self.instruction_title.grid(row=0, column=0, columnspan=2, sticky=tk.W)
+        self.time_label = tk.Label(parent, text="Time passed: 0 days")
+        self.time_label.grid(row=1, column=0, columnspan=2)
 
         # Button layout
         self.create_button = tk.Button(parent, text="Create", command=self.create_planet)
-        self.create_button.grid(row=7, column=0, columnspan=2)
+        self.create_button.grid(row=9, column=0, columnspan=2)
         self.clear_button = tk.Button(parent, text="Clear", command=self.clear_canvas)
-        self.clear_button.grid(row=1, column=0, sticky=tk.N)
+        self.clear_button.grid(row=2, column=0, sticky=tk.N)
         self.reset_button = tk.Button(parent, text="Reset", command=self.reset_canvas)
-        self.reset_button.grid(row=1, column=1, sticky=tk.N)
+        self.reset_button.grid(row=2, column=1, sticky=tk.N)
         self.exit_button = tk.Button(parent, text="Exit", command=self.exit)
-        self.exit_button.grid(row=8, column=0)
+        self.exit_button.grid(row=10, column=0)
         self.run_button = tk.Button(parent, text="Run", command=self.run)
-        self.run_button.grid(row=8, column=1)
+        self.run_button.grid(row=10, column=1)
 
         # Canvas layout
         self.canvas = tk.Canvas(parent, bg="white", 
                                 width=(parent.winfo_screenwidth() - self.instruction_title.winfo_reqwidth()),
                                 height=parent.winfo_screenheight())
-        self.canvas.grid(row=0, column=2, rowspan=10, sticky=tk.E)
+        self.canvas.grid(row=0, column=2, rowspan=12, sticky=tk.E)
         self.canvas_height = self.canvas.winfo_reqheight()
         self.canvas_width = self.canvas.winfo_reqwidth()
-        self.horizontal_line = self.canvas.create_line(0, self.canvas_height / 2, self.canvas_width, self.canvas_height / 2, fill="#000000")
-        self.vertical_line = self.canvas.create_line(self.canvas_width / 2, 0, self.canvas_width / 2, self.canvas_height, fill="#000000")
+        self.canvas.create_line(0, self.canvas_height / 2, self.canvas_width, self.canvas_height / 2, fill="#000000")
+        self.canvas.create_line(self.canvas_width / 2, 0, self.canvas_width / 2, self.canvas_height, fill="#000000")
 
         # Input form layout
+        self.name_label = tk.Label(parent, text="name: ")
+        self.name_label.grid(row=3, column=0)
+        self.name_entry = tk.Entry(parent)
+        self.name_entry.grid(row=3, column=1)
         self.mass_label = tk.Label(parent, text="mass [kg*10^20]: ")
-        self.mass_label.grid(row=2, column=0)
+        self.mass_label.grid(row=4, column=0)
         self.mass_entry = tk.Entry(parent)
-        self.mass_entry.grid(row=2, column=1)
+        self.mass_entry.grid(row=4, column=1)
         self.posx_label = tk.Label(parent, text="x position [km*10^6]: ")
-        self.posx_label.grid(row=3, column=0)
+        self.posx_label.grid(row=5, column=0)
         self.posx_entry = tk.Entry(parent)
-        self.posx_entry.grid(row=3, column=1)
+        self.posx_entry.grid(row=5, column=1)
         self.posy_label = tk.Label(parent, text="y position [km*10^6]: ")
-        self.posy_label.grid(row=4, column=0)
+        self.posy_label.grid(row=6, column=0)
         self.posy_entry = tk.Entry(parent)
-        self.posy_entry.grid(row=4, column=1)
+        self.posy_entry.grid(row=6, column=1)
         self.velx_label = tk.Label(parent, text="x velocity [km/s]: ")
-        self.velx_label.grid(row=5, column=0)
+        self.velx_label.grid(row=7, column=0)
         self.velx_entry = tk.Entry(parent)
-        self.velx_entry.grid(row=5, column=1)
+        self.velx_entry.grid(row=7, column=1)
         self.vely_label = tk.Label(parent, text="y velocity [km/s]: ")
-        self.vely_label.grid(row=6, column=0)
+        self.vely_label.grid(row=8, column=0)
         self.vely_entry = tk.Entry(parent)
-        self.vely_entry.grid(row=6, column=1)
+        self.vely_entry.grid(row=8, column=1)
 
     def create_planet(self):
         # Save the entry form data
+        name = self.name_entry.get()
         pos = [float(self.posx_entry.get()), -1 * float(self.posy_entry.get())] #in units of m*10^9
         mass = float(self.mass_entry.get()) #in units of kg*10^20
         vel = [float(self.velx_entry.get()), -1 * float(self.vely_entry.get())] #in units of m/s*10^3
@@ -107,20 +117,21 @@ class RootContents(tk.Frame):
         vel = vector.scalarMult(vel, pow(10, 3))
 
         # Draw and save the point
-        self.draw_planet(mass, pos, vel)
+        self.draw_planet(name, mass, pos, vel)
 
         # Clear the Entry Form
+        self.name_entry.delete(0, tk.END)
         self.mass_entry.delete(0, tk.END)
         self.posx_entry.delete(0, tk.END)
         self.posy_entry.delete(0, tk.END)
         self.velx_entry.delete(0, tk.END)
         self.vely_entry.delete(0, tk.END)
 
-    def draw_planet(self, mass, pos, vel):
+    def draw_planet(self, name, mass, pos, vel):
         x1, y1 = (int(pos[0]*pow(10, -9)) - R + self.canvas_width / 2), (int(pos[1]*pow(10, -9)) - R + self.canvas_height / 2)
         x2, y2 = (int(pos[0]*pow(10, -9)) + R + self.canvas_width / 2), (int(pos[1]*pow(10, -9)) + R + self.canvas_height / 2)
         tag = self.canvas.create_oval(int(x1), int(y1), int(x2), int(y2), fill="#0000ff")
-        new_planet = PlanetObject(mass, pos, vel, tag)
+        new_planet = PlanetObject(name, mass, pos, vel, tag)
         self.planet_list.append(new_planet)
 
     def delete_planet(self, event):
@@ -145,11 +156,12 @@ class RootContents(tk.Frame):
             return
         self.clear_canvas()
         self.time_Passed = 0
+        self.time_label.configure(text=("Time passed: " + str(self.time_Passed/86400)  + " days"))
         # Reset the planet list to what it was before the simulation was run
         # and redraw the canvas (This adds the planets back into the planet list)
         self.planet_list = []
         for planet in self.old_planet_list:
-            self.draw_planet(planet.mass, planet.pos, planet.vel)
+            self.draw_planet(planet.name, planet.mass, planet.pos, planet.vel)
 
     def run(self):
         if (self.first_run == True):
@@ -162,7 +174,6 @@ class RootContents(tk.Frame):
 
     def stop_running(self):
         self.exit_flag = True
-        #self.motion_thread.join()
         self.motion_thread = None
         self.run_button["text"] = "Run"
         self.run_button["command"] = self.run
@@ -172,7 +183,7 @@ class RootContents(tk.Frame):
         while(not self.exit_flag):
             self.move_planets()
             self.time_Passed = self.time_Passed + TIME
-            print("Days: " + str(self.time_Passed/86400)) #outputs the days passed
+            self.time_label.configure(text=("Time passed: " + str(self.time_Passed/86400)  + " days"))
 
     def exit(self):
         self.stop_running()
@@ -269,6 +280,24 @@ class RootContents(tk.Frame):
                 total = vector.add(total, vector.scalarMult(vector.sub(planet.nextpos, pos),(planet.mass/pow(vector.mag(vector.sub(planet.nextpos, pos)),3))))
         return(vector.scalarMult(total, G))
 
+    def display_info(self, event):
+        if self.canvas.find_withtag(tk.CURRENT):
+            tag = self.canvas.find_withtag(tk.CURRENT)[0]
+            for planet in self.planet_list:
+                if (planet.tag == tag):
+                    planet_data = """PLANET DATA:
+Name: """ + str(planet.name) + """
+Mass: """ + str(planet.mass) + """ kg
+Position (x): """ + str(planet.pos[0]) + """ km
+Position (y): """ + str(planet.pos[1]) + """ km
+Velocity (x): """ + str(planet.vel[0]) + """ km/s
+Velocity (y): """ + str(planet.vel[1]) + """ km/s
+"""
+                    self.instruction_title.configure(text=(planet_data+DIVIDER))
+        else:
+            self.instruction_title.configure(text=(INSTRUCTION_TEXT+DIVIDER))
+
+
 if __name__ == "__main__":
     root = tk.Tk()
 
@@ -280,6 +309,7 @@ if __name__ == "__main__":
     master = RootContents(root)
 
     # Bindings
+    master.canvas.bind("<Button-1>", master.display_info)
     root.bind("<Button-3>", master.delete_planet)
 
     # Execute mainloop
