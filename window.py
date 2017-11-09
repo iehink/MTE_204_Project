@@ -53,7 +53,7 @@ class RootContents(tk.Frame):
         # Text layout
         self.instruction_title = tk.Label(parent, text=(INSTRUCTION_TEXT+DIVIDER), justify=tk.LEFT)
         self.instruction_title.grid(row=0, column=0, columnspan=2, sticky=tk.W)
-        self.time_label = tk.Label(parent, text="Time passed: 0 days")
+        self.time_label = tk.Label(parent, text="Time passed: 0 days", justify=tk.LEFT)
         self.time_label.grid(row=1, column=0, columnspan=2)
 
         # Button layout
@@ -79,27 +79,27 @@ class RootContents(tk.Frame):
         self.canvas.create_line(self.canvas_width / 2, 0, self.canvas_width / 2, self.canvas_height, fill="#000000")
 
         # Input form layout
-        self.name_label = tk.Label(parent, text="name: ")
+        self.name_label = tk.Label(parent, text="Name: ")
         self.name_label.grid(row=3, column=0)
         self.name_entry = tk.Entry(parent)
         self.name_entry.grid(row=3, column=1)
-        self.mass_label = tk.Label(parent, text="mass [kg*10^20]: ")
+        self.mass_label = tk.Label(parent, text="Mass [kg*10^20]: ")
         self.mass_label.grid(row=4, column=0)
         self.mass_entry = tk.Entry(parent)
         self.mass_entry.grid(row=4, column=1)
-        self.posx_label = tk.Label(parent, text="x position [km*10^6]: ")
+        self.posx_label = tk.Label(parent, text="x-Position [km*10^6]: ")
         self.posx_label.grid(row=5, column=0)
         self.posx_entry = tk.Entry(parent)
         self.posx_entry.grid(row=5, column=1)
-        self.posy_label = tk.Label(parent, text="y position [km*10^6]: ")
+        self.posy_label = tk.Label(parent, text="y-Position [km*10^6]: ")
         self.posy_label.grid(row=6, column=0)
         self.posy_entry = tk.Entry(parent)
         self.posy_entry.grid(row=6, column=1)
-        self.velx_label = tk.Label(parent, text="x velocity [km/s]: ")
+        self.velx_label = tk.Label(parent, text="x-Velocity [km/s]: ")
         self.velx_label.grid(row=7, column=0)
         self.velx_entry = tk.Entry(parent)
         self.velx_entry.grid(row=7, column=1)
-        self.vely_label = tk.Label(parent, text="y velocity [km/s]: ")
+        self.vely_label = tk.Label(parent, text="y-Velocity [km/s]: ")
         self.vely_label.grid(row=8, column=0)
         self.vely_entry = tk.Entry(parent)
         self.vely_entry.grid(row=8, column=1)
@@ -156,7 +156,7 @@ class RootContents(tk.Frame):
             return
         self.clear_canvas()
         self.time_Passed = 0
-        self.time_label.configure(text=("Time passed: " + str(self.time_Passed/86400)  + " days"))
+        self.time_label.configure(text=("Time passed: " + str(int(self.time_Passed/86400))  + " days"))
         # Reset the planet list to what it was before the simulation was run
         # and redraw the canvas (This adds the planets back into the planet list)
         self.planet_list = []
@@ -183,7 +183,7 @@ class RootContents(tk.Frame):
         while(not self.exit_flag):
             self.move_planets()
             self.time_Passed = self.time_Passed + TIME
-            self.time_label.configure(text=("Time passed: " + str(self.time_Passed/86400)  + " days"))
+            self.time_label.configure(text=("Time passed: " + str(int(self.time_Passed/86400))  + " days"))
 
     def exit(self):
         self.stop_running()
@@ -287,11 +287,11 @@ class RootContents(tk.Frame):
                 if (planet.tag == tag):
                     planet_data = """PLANET DATA:
 Name: """ + str(planet.name) + """
-Mass: """ + str(planet.mass) + """ kg
-Position (x): """ + str(planet.pos[0]) + """ km
-Position (y): """ + str(planet.pos[1]) + """ km
-Velocity (x): """ + str(planet.vel[0]) + """ km/s
-Velocity (y): """ + str(planet.vel[1]) + """ km/s
+Mass: """ + str(planet.mass/pow(10,20)) + """ [kg*10^20]
+x-Position: """ + str(planet.pos[0]/pow(10,9)) + """ [km*10^6]
+y-Position: """ + str(planet.pos[1]/pow(10,9)) + """ [km*10^6]
+x-Velocity: """ + str(planet.vel[0]/pow(10,3)) + """ [km/s]
+y-Velocity: """ + str(planet.vel[1]/pow(10,3)) + """ [km/s]
 """
                     self.instruction_title.configure(text=(planet_data+DIVIDER))
         else:
