@@ -19,7 +19,7 @@ DIVIDER = """__________________________________________________________________"
 
 R = 3 #radius of drawn planets
 G = 6.67408 * pow(10,-11) #gravitational constant, m^3 kg^-1 s^-2 
-TIME = 43200 #43200 seconds = 1/2 day
+TIME = 2700 #43200 seconds = 1/2 day
 
 class PlanetObject(object):
     def __init__(self, name, mass, pos, vel, tag):
@@ -255,8 +255,8 @@ class RootContents(tk.Frame):
         for planet in self.planet_list:
             planet.vel = vector.add(planet.vel, vector.scalarMult(vector.add(vector.add(vector.add(planet.k1, vector.scalarMult(planet.k2, 2)), vector.scalarMult(planet.k3, 2)), planet.k4), TIME/6))
             planet.pos = vector.add(planet.pos, vector.scalarMult(vector.add(vector.add(vector.add(planet.v1, vector.scalarMult(planet.v2, 2)), vector.scalarMult(planet.v3, 2)), planet.v4), TIME/6))
-            print("Velocity: " + str(planet.vel))
-            print("Position: " + str(planet.pos))
+            #print("Velocity: " + str(planet.vel))
+            #print("Position: " + str(planet.pos))
 
             planet.nextvel = planet.vel
             planet.nextpos = planet.pos
