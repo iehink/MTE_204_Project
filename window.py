@@ -107,9 +107,9 @@ class RootContents(tk.Frame):
     def create_planet(self):
         # Save the entry form data
         name = self.name_entry.get()
-        pos = [float(self.posx_entry.get()), -1 * float(self.posy_entry.get())] #in units of m*10^9
+        pos = [float(self.posx_entry.get()), float(self.posy_entry.get())] #in units of m*10^9
         mass = float(self.mass_entry.get()) #in units of kg*10^20
-        vel = [float(self.velx_entry.get()), -1 * float(self.vely_entry.get())] #in units of m/s*10^3
+        vel = [float(self.velx_entry.get()), float(self.vely_entry.get())] #in units of m/s*10^3
 
         # Modify to match units used in calculations
         mass = mass*pow(10,20)
@@ -128,8 +128,8 @@ class RootContents(tk.Frame):
         self.vely_entry.delete(0, tk.END)
 
     def draw_planet(self, name, mass, pos, vel):
-        x1, y1 = (int(pos[0]*pow(10, -9)) - R + self.canvas_width / 2), (int(pos[1]*pow(10, -9)) - R + self.canvas_height / 2)
-        x2, y2 = (int(pos[0]*pow(10, -9)) + R + self.canvas_width / 2), (int(pos[1]*pow(10, -9)) + R + self.canvas_height / 2)
+        x1, y1 = (int(pos[0]*pow(10, -9)) - R + self.canvas_width / 2), (-1*int(pos[1]*pow(10, -9)) - R + self.canvas_height / 2)
+        x2, y2 = (int(pos[0]*pow(10, -9)) + R + self.canvas_width / 2), (-1*int(pos[1]*pow(10, -9)) + R + self.canvas_height / 2)
         tag = self.canvas.create_oval(int(x1), int(y1), int(x2), int(y2), fill="#0000ff")
         new_planet = PlanetObject(name, mass, pos, vel, tag)
         self.planet_list.append(new_planet)
@@ -199,9 +199,9 @@ class RootContents(tk.Frame):
             # planet[1] is the planet's converted y position
             self.canvas.coords(planet[2],
                                planet[0] - R + self.canvas_width / 2,
-                               planet[1] - R + self.canvas_height / 2,
+                               -1*planet[1] - R + self.canvas_height / 2,
                                planet[0] + R + self.canvas_width / 2,
-                               planet[1] + R + self.canvas_height / 2)
+                               -1*planet[1] + R + self.canvas_height / 2)
         #time.sleep(.001)
 
     #runge kutta: pos(i+1) = pos(i) + vel(i)*TIME + 1/6 * (k1+2k2+2k3+k4)*TIME^2
