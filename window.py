@@ -19,17 +19,23 @@ DIVIDER = """__________________________________________________________________"
 
 R = 3 #radius of drawn planets
 G = 6.67408 * pow(10,-11) #gravitational constant, m^3 kg^-1 s^-2 
-TIME = 2700 #43200 seconds = 1/2 day
+TIME = 2700 #= 1/32 day
 
+#Defines a planet object
 class PlanetObject(object):
+    #Initializes new planet objects
     def __init__(self, name, mass, pos, vel, tag):
+        self.tag = tag
         self.name = name
         self.mass = mass
         self.pos = pos
-        self.nextpos = pos
         self.vel = vel
+
+        # Hold intermediate values for position and velocity during calculations
+        self.nextpos = pos
         self.nextvel = vel
-        self.tag = tag
+
+        # Hold the intermediate slopes calculated by the Runge-Kutta method
         self.k1 = 0
         self.k2 = 0
         self.k3 = 0
@@ -42,13 +48,14 @@ class PlanetObject(object):
 class RootContents(tk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
-        self.planet_list = list()
-        self.old_planet_list = None
+        self.planet_list = list() # A list of planets created by the user
+        self.old_planet_list = None # The original values of the planets for use in resetting
         self.root = parent
         self.motion_thread = None
-        self.exit_flag = False
-        self.time_Passed = 0
-        self.first_run = True
+        
+        self.exit_flag = False # Signals when the simulation should stop
+        self.first_run = True # Tracks whether this is the first time the simulation has been run since the last clear
+        self.time_Passed = 0 # Tracks the time that the simulation has processed
 
         # Text layout
         self.instruction_title = tk.Label(parent, text=(INSTRUCTION_TEXT+DIVIDER), justify=tk.LEFT)
@@ -104,6 +111,7 @@ class RootContents(tk.Frame):
         self.vely_entry = tk.Entry(parent)
         self.vely_entry.grid(row=8, column=1)
 
+    # Receives data from the user and formats it
     def create_planet(self):
         # Save the entry form data
         name = self.name_entry.get()
@@ -127,13 +135,18 @@ class RootContents(tk.Frame):
         self.velx_entry.delete(0, tk.END)
         self.vely_entry.delete(0, tk.END)
 
+    # Draws a planet on the canvas and creates a new planet object
     def draw_planet(self, name, mass, pos, vel):
+        # Draw the planet
         x1, y1 = (int(pos[0]*pow(10, -9)) - R + self.canvas_width / 2), (-1*int(pos[1]*pow(10, -9)) - R + self.canvas_height / 2)
         x2, y2 = (int(pos[0]*pow(10, -9)) + R + self.canvas_width / 2), (-1*int(pos[1]*pow(10, -9)) + R + self.canvas_height / 2)
         tag = self.canvas.create_oval(int(x1), int(y1), int(x2), int(y2), fill="#0000ff")
+
+        #Create new planet and add it to the planet list
         new_planet = PlanetObject(name, mass, pos, vel, tag)
         self.planet_list.append(new_planet)
 
+    # Removes the oval from the canvas and the planet from the planet list
     def delete_planet(self, event):
         can = event.widget
         if (isinstance(can, tk.Canvas)):
@@ -143,6 +156,7 @@ class RootContents(tk.Frame):
                         del(self.planet_list[planet_index])
                 self.canvas.delete(tk.CURRENT)
 
+    # Removes all ovals from the canvas and empties the planet list.
     def clear_canvas(self):
         self.canvas.delete(tk.ALL)
         self.canvas.create_line(0, self.canvas_height / 2, self.canvas_width, self.canvas_height / 2, fill="#000000")
@@ -151,19 +165,23 @@ class RootContents(tk.Frame):
         self.time_Passed = 0
         self.first_run = True
 
+    # Resets the canvas and returns the planets to their original states
     def reset_canvas(self):
         if (self.old_planet_list is None):
             return
         self.clear_canvas()
         self.time_Passed = 0
         self.time_label.configure(text=("Time passed: " + str(int(self.time_Passed/86400))  + " days"))
+        
         # Reset the planet list to what it was before the simulation was run
         # and redraw the canvas (This adds the planets back into the planet list)
         self.planet_list = []
         for planet in self.old_planet_list:
             self.draw_planet(planet.name, planet.mass, planet.pos, planet.vel)
 
+    # Starts the simulation
     def run(self):
+        # Makes a copy of the planets if this is the first time the simulation has been run
         if (self.first_run == True):
             self.old_planet_list = copy.deepcopy(self.planet_list)
             self.first_run = False
@@ -172,28 +190,30 @@ class RootContents(tk.Frame):
         self.motion_thread = threading.Thread(target=self.motion)
         self.motion_thread.start()
 
+    # Stops the simulation from running
     def stop_running(self):
         self.exit_flag = True
         self.motion_thread = None
         self.run_button["text"] = "Run"
         self.run_button["command"] = self.run
 
+    # Loops while calling move_planets and tracking the time passed
     def motion(self):
         self.exit_flag = False
         while(not self.exit_flag):
             self.move_planets()
             self.time_Passed = self.time_Passed + TIME
-            self.time_label.configure(text=("Time passed: " + str(int(self.time_Passed/86400))  + " days"))
+            self.time_label.configure(text=("Time passed: " + str(int(self.time_Passed/86400))  + " days")) #Outputs the time passed in days
 
+    # Shuts down the program
     def exit(self):
         self.stop_running()
         self.root.destroy()
 
+    # Draws the new position of each planet
     def move_planets(self):
         converted_planet_list = self.next_pos()
         for planet in converted_planet_list:
-            #print(planet[0])
-            #print(planet[1])
             # planet[2] is the oval's tag in the canvas
             # planet[0] is the planet's converted x position
             # planet[1] is the planet's converted y position
@@ -202,25 +222,16 @@ class RootContents(tk.Frame):
                                -1*planet[1] - R + self.canvas_height / 2,
                                planet[0] + R + self.canvas_width / 2,
                                -1*planet[1] + R + self.canvas_height / 2)
-        #time.sleep(.001)
-
-    #runge kutta: pos(i+1) = pos(i) + vel(i)*TIME + 1/6 * (k1+2k2+2k3+k4)*TIME^2
-    #k1 = f(y)
-    #k2 = f(y + 1/2k1h)
-    #k3 = f(y + 1/2k2h)
-    #k4 = f(y+k3h)
 
     #Finds the next position of each planet using the Runge Kutta Method
-    #NOTE:
-    #   Finding the k value and finding the next velocity/position need to be in different loops
-    #   This prevents the changing of one position from effecting the other k predictions
+    #k1 through k4 track intermediate values of acceleration used by the Runge Kutta Method
+    #v1 through v4 track intermediate values of velocity used by the Runge Kutta Method
     def next_pos(self):
         #Find k1 for each planet
         for planet in self.planet_list:
             planet.k1 = self.slope(planet.nextpos, planet)
-            #print("k1: " + str(planet.k1))
 
-        #Use k1 to find predicted next velocity and position
+        #Use k1 to find the predicted next velocity and position
         for planet in self.planet_list:
             planet.nextvel = vector.add(planet.vel, vector.scalarMult(planet.k1, 1/2*TIME))
             planet.v1 = planet.nextvel
@@ -253,14 +264,15 @@ class RootContents(tk.Frame):
 
         #Use k values to find velocity and position
         for planet in self.planet_list:
+            # Uses classical fourth order Runge Kutta to calculate the next velocity 
             planet.vel = vector.add(planet.vel, vector.scalarMult(vector.add(vector.add(vector.add(planet.k1, vector.scalarMult(planet.k2, 2)), vector.scalarMult(planet.k3, 2)), planet.k4), TIME/6))
+            # Uses classical fourth order Runge Kutta to calculate the next position
             planet.pos = vector.add(planet.pos, vector.scalarMult(vector.add(vector.add(vector.add(planet.v1, vector.scalarMult(planet.v2, 2)), vector.scalarMult(planet.v3, 2)), planet.v4), TIME/6))
-            #print("Velocity: " + str(planet.vel))
-            #print("Position: " + str(planet.pos))
 
             planet.nextvel = planet.vel
             planet.nextpos = planet.pos
 
+        #Creates a list that can be used to output to the canvas
         converted_planet_list = []
         for planet in self.planet_list:
             # convert units here, then return another list
@@ -272,14 +284,16 @@ class RootContents(tk.Frame):
             
         return converted_planet_list
 
-    #Uses the predicted next position values to find the acceleration of the planet
+    # Uses the predicted next position values to find the acceleration of the planet
     def slope(self, pos, ref_planet):
-        total = [0,0]
+        total = [0,0] # Tracks the total acceleration on the planet
         for planet in self.planet_list:
             if (ref_planet != planet):
+                # Uses Newton's Law of Universial Gravitation to find the component of acceleration caused by each other planet in the system
                 total = vector.add(total, vector.scalarMult(vector.sub(planet.nextpos, pos),(planet.mass/pow(vector.mag(vector.sub(planet.nextpos, pos)),3))))
         return(vector.scalarMult(total, G))
 
+    # Display the info on a planet when it is clicked on
     def display_info(self, event):
         if self.canvas.find_withtag(tk.CURRENT):
             tag = self.canvas.find_withtag(tk.CURRENT)[0]
