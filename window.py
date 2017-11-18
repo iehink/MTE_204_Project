@@ -157,6 +157,13 @@ class RootContents(tk.Frame):
 
     # Removes all ovals from the canvas and empties the planet list
     def clear_canvas(self):
+        text_file = open("Output.txt", "w")
+        for planet in self.old_planet_list:
+            text = str("\n" + str(planet.name) + "\n" + str(planet.mass*pow(10, -20)) + "\n" + str(planet.pos[0]*pow(10, -9)) + ", " + str(planet.pos[1]*pow(10, -9)) + "\n" + str(planet.vel[0]*pow(10,-3)) + "\n" + str(planet.vel[1]*pow(10,-3)) + "\n")
+            text_file.write("%s" % text)
+        
+        text_file.close()
+        
         self.canvas.delete(tk.ALL)
         self.canvas.create_line(0, self.canvas_height / 2, self.canvas_width, self.canvas_height / 2, fill="#000000")
         self.canvas.create_line(self.canvas_width / 2, 0, self.canvas_width / 2, self.canvas_height, fill="#000000")
